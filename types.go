@@ -15,6 +15,7 @@ type CompInvConfig struct {
 	RestPort       int
 	RestHost       string
 	StartChecks    int
+	DashPage       string
 }
 
 type restHandler struct{}

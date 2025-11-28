@@ -20,6 +20,10 @@ func setupREST() {
 	router.HandleFunc("/service/{serviceID}", rest.getServInfo)
 	router.HandleFunc("/service", rest.getServices)
 
+	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, activeConfig.DashPage)
+	})
+
 	out.Println("Pass REST off to net/http")
 	addr := fmt.Sprintf("%s:%d", activeConfig.RestHost, activeConfig.RestPort)
 	http.ListenAndServe(addr, router)
@@ -81,7 +85,7 @@ func (h *restHandler) getServUptime(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	serviceID := vars["serviceID"]
 
-	st, err := db.Prepare(fmt.Sprintf("select ENTRY,STATUS,LATENCY from %s.%s WHERE SERVICE_ID = %s ORDER BY ENTRY DESC LIMIT 128",
+	st, err := db.Prepare(fmt.Sprintf(" select ENTRY,STATUS,LATENCY from %s.%s WHERE SERVICE_ID = %s ORDER BY ENTRY DESC LIMIT 128",
 		activeConfig.TargetSchema, activeConfig.UptimeTable, serviceID))
 	if err != nil {
 		out.Printf("Unable to prepare statement: %+v", err)
