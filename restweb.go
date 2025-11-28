@@ -18,10 +18,60 @@ func setupREST() {
 	router.HandleFunc("/device/all", rest.getInventory)
 	router.HandleFunc("/service/{serviceID}/uptime", rest.getServUptime)
 	router.HandleFunc("/service/{serviceID}", rest.getServInfo)
+	router.HandleFunc("/service", rest.getServices)
 
 	out.Println("Pass REST off to net/http")
 	addr := fmt.Sprintf("%s:%d", activeConfig.RestHost, activeConfig.RestPort)
 	http.ListenAndServe(addr, router)
+}
+
+func (h *restHandler) getServices(w http.ResponseWriter, r *http.Request) {
+	out.Println("Begin getServices()")
+	profiler := time.Now()
+	var resp []ServInvRow
+
+	st, err := db.Prepare(fmt.Sprintf(
+		`SELECT B.SERVICE_ID
+      		   ,AVG(A.LATENCY) AS AVG_LATENCY 
+      		   ,B.SDESC 
+			   ,B.ADDRESS 
+		       ,B.PORT 
+		       ,B.PROTOCOL 
+			   ,B.SERIAL
+		FROM %s.%s A INNER JOIN %s.%s B 
+		ON A.SERVICE_ID = B.SERVICE_ID 
+		GROUP BY B.SERVICE_ID, B.SDESC, B.ADDRESS, B.PORT, B.PROTOCOL, B.SERIAL; `,
+		activeConfig.TargetSchema, activeConfig.UptimeTable, activeConfig.TargetSchema, activeConfig.ServiceTable))
+	if err != nil {
+		out.Printf("Unable to prepare statement: %+v", err)
+		return
+	}
+	rows, err := st.Query()
+	if err != nil {
+		out.Printf("Error returned from st.Query(): %+v", err)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var rServiceID int
+		var rSerial, rDesc, rAddr, rPort, rProto string
+		var rLatency float32
+		err = rows.Scan(&rServiceID, &rLatency, &rDesc, &rAddr, &rPort, &rProto, &rSerial)
+		if err != nil {
+			out.Printf("Error returned from rows.Scan(): %+v", err)
+		}
+		resp = append(resp, ServInvRow{ServiceID: rServiceID, Serial: rSerial, SDesc: rDesc, Address: rAddr, Latency: rLatency})
+	}
+	structResp := ServInvResp{Services: resp, Code: 200, Message: "OK"}
+	jsonResp, err := json.Marshal(structResp)
+	if err != nil {
+		out.Printf("Error returned from json.Marshal(): %+v", err)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResp)
+	}
+	out.Printf("getInventory finished in %+v", time.Since(profiler))
+
 }
 
 func (h *restHandler) getServUptime(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +110,7 @@ func (h *restHandler) getServUptime(w http.ResponseWriter, r *http.Request) {
 			out.Printf("Error converting serviceID to int: %+v", err)
 			return
 		}
-		resp = append(resp, ServTimeRow{Entry: rEntry, Status: rune(rStatus[0]), Latency: int(rLatency), ServiceID: parsedServiceID})
+		resp = append(resp, ServTimeRow{Entry: rEntry, Status: rune(rStatus[0]), Latency: rLatency, ServiceID: parsedServiceID})
 	}
 
 	structResp := ServTimeResp{Entries: resp, Code: 200, Message: "OK"}

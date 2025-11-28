@@ -34,11 +34,12 @@ type ServInvRow struct {
 	Protocol  string
 	SDesc     string
 	Serial    string
+	Latency   float32
 }
 
 type ServTimeRow struct {
 	Entry     string
-	Latency   int
+	Latency   float32
 	Status    rune
 	ServiceID int
 }
