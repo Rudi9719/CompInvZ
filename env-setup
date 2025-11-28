@@ -1,0 +1,8 @@
+source <(go env)
+export IBM_DB_HOME=$GOPATH/pkg/mod/github.com/ibmdb/clidriver
+export CGO_CFLAGS=-I$IBM_DB_HOME/include
+export CGO_LDFLAGS=-L$IBM_DB_HOME/lib
+export LD_LIBRARY_PATH=$IBM_DB_HOME/lib:$LD_LIBRARY_PATH
+
+# macOS Only
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$IBM_DB_HOME/lib

@@ -1,0 +1,10 @@
+hostname = "10.168.168.168"
+database = "DB2TLOC"
+port = 8103
+UID = "IBMUSER"
+PWD = "sys1"
+InventoryTable = "COMPINV"
+ServiceTable = "SERVINV"
+UptimeTable = "SERVTIME"
+TargetSchema = "IBMUSER"
+Heartbeat = 45
