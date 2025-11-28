@@ -8,3 +8,7 @@ ServiceTable = "SERVINV"
 UptimeTable = "SERVTIME"
 TargetSchema = "IBMUSER"
 Heartbeat = 45
+StartRest = 0
+StartChecks = 0
+RestHost = ""
+RestPort = 80
