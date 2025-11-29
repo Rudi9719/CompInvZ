@@ -20,7 +20,7 @@ func setupREST() {
 	router.HandleFunc("/service/{serviceID}", rest.getServInfo)
 	router.HandleFunc("/service", rest.getServices)
 
-	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, activeConfig.DashPage)
 	})
 
