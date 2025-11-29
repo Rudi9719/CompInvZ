@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Service Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        
+        body { 
+            font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif; 
+            padding: 2rem; 
+            background-color: #f4f4f4; 
+            color: #161616; 
+        }
+
+        h1 {
+            font-weight: 400; 
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            background-color: #ffffff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+        }
+
+        th { 
+            background-color: #e0e0e0; 
+            color: #161616;
+            font-weight: 600;
+            text-align: left;
+            padding: 16px; 
+            border-bottom: 2px solid #8d8d8d; 
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        th:nth-child(1) {
+            width: 60px;
+        }
+        th:nth-child(2) {
+            width: auto;
+        }
+        th:nth-child(3) { 
+            width: 120px; 
+        } 
+        td { 
+            padding: 16px; 
+            border-bottom: 1px solid #e0e0e0; 
+            border-top: none; 
+            border-left: none; 
+            border-right: none;
+            font-size: 14px;
+            color: #525252; 
+        }
+
+        
+        tbody tr {
+            transition: background-color 0.1s;
+        }
+
+        tbody tr:hover {
+            background-color: #e5e5e5; 
+            cursor: pointer;
+            box-shadow: inset 4px 0 0 #0f62fe; 
+        }
+
+        tbody tr:last-child td {
+            border-bottom: 1px solid #8d8d8d; 
+        }
+
+        #details-tooltip {
+            position: absolute;
+            display: none;
+            background-color: #393939; 
+            color: #ffffff;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-weight: 400;
+            z-index: 1000;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            pointer-events: none;
+            white-space: pre-line;
+            line-height: 1.5;
+            border-radius: 0px; 
+        }
+
+        .viewport p {
+            padding: 16px;
+            font-style: italic;
+        }
+    </style>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+    $(document).ready(function(){
+        
+        $.get("/service", function(data, status){
+            var tableContent = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SVC ID</th>
+                            <th>Description</th>
+                            <th>Latency (ms)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            $.each(data.Services, function(index, service) {
+                tableContent += '<tr data-id="' + service.ServiceID + '">';
+                tableContent += '<td>' + service.ServiceID + '</td>';
+    
+                tableContent += '<td><strong>' + service.SDesc + '</strong></td>';
+                
+                
+                var latency = parseFloat(service.Latency).toFixed(2);
+                tableContent += '<td>' + latency + '</td>';
+                
+                tableContent += '</tr>';
+            });
+
+            tableContent += '</tbody></table>';
+            $("#viewport").html(tableContent);
+        });
+
+        // Hover Logic
+        $(document).on('mouseenter', 'tbody tr', function(e) {
+            var row = $(this);
+            var serviceID = row.data('id');
+            var tooltip = $('#details-tooltip');
+
+            tooltip.text("Fetching details...");
+            tooltip.show();
+
+            $.get("/service/" + serviceID, function(response) {
+                var s = response.Service; 
+                
+                var content = 
+                    "Address: " + s.Address + "\n" +
+                    "Protocol: " + s.Protocol + "\n" +
+                    "Port: " + s.Port;
+
+                tooltip.text(content);
+            });
+        });
+
+        $(document).on('mousemove', 'tbody tr', function(e) {
+            $('#details-tooltip').css({
+                top: e.pageY + 10, 
+                left: e.pageX + 10
+            });
+        });
+
+        $(document).on('mouseleave', 'tbody tr', function() {
+            $('#details-tooltip').hide();
+        });
+
+    });
+    </script>
+</head>
+<body>
+    <div class="topbar"><h1>CompInvZ Monitored Services</h1></div>
+    <div id="details-tooltip"></div>
+    <div class="viewport" id="viewport">
+        <p>Loading data...</p>
+    </div>
+</body>
+</html>
+
